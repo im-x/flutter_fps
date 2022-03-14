@@ -19,29 +19,29 @@ import 'util/debug_log.dart';
 @Deprecated("统计不准，只有cpu部分，即ui线程 build layout paint部分")
 class BindingFps {
   /// 单例
-  static BindingFps _instance;
+  static BindingFps? _instance;
 
   static BindingFps get instance {
     if (_instance == null) {
       _instance = BindingFps._();
     }
-    return _instance;
+    return _instance!;
   }
 
   /// 1s里最高120hz了吧
   static const MAX_FPS = 120;
-  Timer _timer;
+  Timer? _timer;
   ListQueue<_FpsFrame> _frameQueue = ListQueue(MAX_FPS);
-  bool _init;
+  bool _init = false;
   List<FpsCallback> _callBackList = [];
 
   /// 一般手机为60帧
-  double _fpsHz;
+  double? _fpsHz;
 
   BindingFps._();
 
   start() async {
-    if (_init ?? false) {
+    if (_init) {
       // 避免重复初始化
       return;
     }
@@ -64,60 +64,60 @@ class BindingFps {
     _timer?.cancel();
     _timer = null;
     if (beginCallId != null) {
-      WidgetsBinding.instance.cancelFrameCallbackWithId(beginCallId);
+      WidgetsBinding.instance?.cancelFrameCallbackWithId(beginCallId!);
     }
     drawTimeCallback = null;
   }
 
   /// 注册回调
   registerCallBack(FpsCallback back) {
-    _callBackList?.add(back);
+    _callBackList.add(back);
   }
 
   unregisterCallBack(FpsCallback back) {
-    _callBackList?.remove(back);
+    _callBackList.remove(back);
   }
 
   /// 当前帧
-  _FpsFrame _currentFrame;
+  _FpsFrame? _currentFrame;
 
   /// 帧数的id
   var frameId = 1;
-  FrameCallback beginTimeCallback;
-  int beginCallId;
-  FrameCallback drawTimeCallback;
+  FrameCallback? beginTimeCallback;
+  int? beginCallId;
+  FrameCallback? drawTimeCallback;
 
   _registerListener() {
     beginTimeCallback = (timeStamp) {
       // handle begin frame
       _beginFrame();
 
-      if (drawTimeCallback != null) {
+      if (drawTimeCallback != null && beginTimeCallback != null) {
         beginCallId =
-            WidgetsBinding.instance.scheduleFrameCallback(beginTimeCallback);
+            WidgetsBinding.instance?.scheduleFrameCallback(beginTimeCallback!);
       }
     };
 
     // 理论上每一帧应该都是先begin,再draw
     // 那有没有可能是上一针没draw完，下一帧begin开始了
     beginCallId =
-        WidgetsBinding.instance.scheduleFrameCallback(beginTimeCallback);
+        WidgetsBinding.instance?.scheduleFrameCallback(beginTimeCallback!);
 
     drawTimeCallback = (timeStamp) {
       // handle draw frame
       _drawFrame();
     };
-    WidgetsBinding.instance.addPersistentFrameCallback(drawTimeCallback);
+    WidgetsBinding.instance?.addPersistentFrameCallback(drawTimeCallback!);
   }
 
   _beginFrame() {
     if (_currentFrame == null) {
       _currentFrame = _FpsFrame(frameId++, frameStartTime: DateTime.now());
     } else {
-      _currentFrame.clear();
+      _currentFrame?.clear();
       if (frameId > 10000) frameId = 0;
-      _currentFrame.frameId = frameId++;
-      _currentFrame.frameStartTime = DateTime.now();
+      _currentFrame?.frameId = frameId++;
+      _currentFrame?.frameStartTime = DateTime.now();
     }
   }
 
@@ -133,8 +133,8 @@ class BindingFps {
       return;
     }
 
-    _currentFrame.frameEndTime = DateTime.now();
-    _frameQueue.addFirst(_currentFrame);
+    _currentFrame?.frameEndTime = DateTime.now();
+    if (_currentFrame != null) _frameQueue.addFirst(_currentFrame!);
   }
 
   /// 计算fps
@@ -144,19 +144,24 @@ class BindingFps {
       return;
     }
 
-    while (_frameQueue.length > _fpsHz) {
+    if (_fpsHz == null) {
+      DebugLog.instance.log("bindingFps,NO FRAME");
+      return;
+    }
+
+    while (_frameQueue.length > _fpsHz!) {
       _frameQueue.removeLast();
     }
 
     var _calFrameQueue = ListQueue(_frameQueue.length);
     _calFrameQueue.addAll(_frameQueue);
-    _frameQueue?.clear();
-    while (_calFrameQueue.length > _fpsHz) {
+    _frameQueue.clear();
+    while (_calFrameQueue.length > _fpsHz!) {
       _calFrameQueue.removeLast();
     }
-    double drawFrame = _calFrameQueue.length?.toDouble();
-    double dropFrameCount = _fpsHz - drawFrame;
-    _callBackList?.forEach((callBack) {
+    double drawFrame = _calFrameQueue.length.toDouble();
+    double dropFrameCount = _fpsHz! - drawFrame;
+    _callBackList.forEach((callBack) {
       callBack(drawFrame.toDouble(), dropFrameCount.toDouble());
     });
 //    DebugLog.instance.log(
@@ -165,13 +170,14 @@ class BindingFps {
 }
 
 class _FpsFrame {
-  DateTime frameStartTime;
-  DateTime frameEndTime;
+  DateTime? frameStartTime;
+  DateTime? frameEndTime;
   int frameId;
 
   _FpsFrame(this.frameId, {this.frameStartTime, this.frameEndTime});
 
-  int get frameTime => frameEndTime.millisecond - frameStartTime.millisecond;
+  int get frameTime =>
+      (frameEndTime?.millisecond ?? 0) - (frameStartTime?.millisecond ?? 0);
 
   clear() {
     frameStartTime = null;
