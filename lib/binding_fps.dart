@@ -64,7 +64,7 @@ class BindingFps {
     _timer?.cancel();
     _timer = null;
     if (beginCallId != null) {
-      WidgetsBinding.instance?.cancelFrameCallbackWithId(beginCallId!);
+      WidgetsBinding.instance.cancelFrameCallbackWithId(beginCallId!);
     }
     drawTimeCallback = null;
   }
@@ -94,20 +94,20 @@ class BindingFps {
 
       if (drawTimeCallback != null && beginTimeCallback != null) {
         beginCallId =
-            WidgetsBinding.instance?.scheduleFrameCallback(beginTimeCallback!);
+            WidgetsBinding.instance.scheduleFrameCallback(beginTimeCallback!);
       }
     };
 
     // 理论上每一帧应该都是先begin,再draw
     // 那有没有可能是上一针没draw完，下一帧begin开始了
     beginCallId =
-        WidgetsBinding.instance?.scheduleFrameCallback(beginTimeCallback!);
+        WidgetsBinding.instance.scheduleFrameCallback(beginTimeCallback!);
 
     drawTimeCallback = (timeStamp) {
       // handle draw frame
       _drawFrame();
     };
-    WidgetsBinding.instance?.addPersistentFrameCallback(drawTimeCallback!);
+    WidgetsBinding.instance.addPersistentFrameCallback(drawTimeCallback!);
   }
 
   _beginFrame() {

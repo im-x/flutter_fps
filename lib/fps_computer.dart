@@ -34,7 +34,7 @@ class Fps {
       //异步计算fps
       _computeFps(timings);
     };
-    SchedulerBinding.instance?.addTimingsCallback(_timingsCallback!);
+    SchedulerBinding.instance.addTimingsCallback(_timingsCallback!);
   }
 
   registerCallBack(FpsCallback back) {
@@ -49,7 +49,7 @@ class Fps {
     if (_timingsCallback == null) {
       return;
     }
-    SchedulerBinding.instance?.removeTimingsCallback(_timingsCallback!);
+    SchedulerBinding.instance.removeTimingsCallback(_timingsCallback!);
   }
 
   /// 一般手机为60帧
